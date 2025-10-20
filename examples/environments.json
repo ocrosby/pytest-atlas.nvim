@@ -1,0 +1,7 @@
+{
+  "environments": {
+    "qa": ["auto", "use1"],
+    "fastly": ["auto"],
+    "prod": ["auto", "use1", "usw2", "euw1", "apse1"]
+  }
+}
