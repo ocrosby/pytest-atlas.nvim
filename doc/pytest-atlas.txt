@@ -1,0 +1,169 @@
+*pytest-atlas.txt*  A Neovim plugin for pytest test configuration and execution
+
+Author: ocrosby
+License: MIT
+Version: 1.0.0
+
+==============================================================================
+CONTENTS                                            *pytest-atlas-contents*
+
+    1. Introduction ..................... |pytest-atlas-introduction|
+    2. Requirements ..................... |pytest-atlas-requirements|
+    3. Installation ..................... |pytest-atlas-installation|
+    4. Usage ............................ |pytest-atlas-usage|
+    5. Configuration .................... |pytest-atlas-configuration|
+    6. Commands ......................... |pytest-atlas-commands|
+    7. Functions ........................ |pytest-atlas-functions|
+    8. License .......................... |pytest-atlas-license|
+
+==============================================================================
+1. INTRODUCTION                                 *pytest-atlas-introduction*
+
+pytest-atlas.nvim is a Neovim plugin that provides an interactive picker
+interface for configuring and running pytest tests. It allows you to easily
+select environments, regions, test markers, and optionally generate Allure
+reports.
+
+Features:
+- Interactive test picker for environment, region, and marker selection
+- Automatic Python virtual environment detection
+- Allure report integration
+- Smart caching of previous test configurations
+- Support for custom preprocessor scripts
+
+==============================================================================
+2. REQUIREMENTS                                 *pytest-atlas-requirements*
+
+- Neovim >= 0.9.0
+- snacks.nvim (https://github.com/folke/snacks.nvim)
+- Python virtual environment (optional but recommended)
+- pytest (for running tests)
+- allure-commandline (optional, for Allure reports)
+
+==============================================================================
+3. INSTALLATION                                 *pytest-atlas-installation*
+
+Using lazy.nvim: >
+
+    {
+      "ocrosby/pytest-atlas.nvim",
+      dependencies = {
+        "folke/snacks.nvim",
+      },
+      config = function()
+        require("pytest-atlas").setup({
+          keymap = "<leader>tt",
+          enable_keymap = true,
+        })
+      end,
+    }
+<
+
+==============================================================================
+4. USAGE                                               *pytest-atlas-usage*
+
+Default Keymap~
+
+Press `<leader>tt` to open the test picker. The picker will guide you through:
+
+1. Select environment (qa, fastly, prod)
+2. Choose region (auto, use1, usw2, etc.)
+3. Pick test markers (bdd, unit, functional, etc.)
+4. Decide on Allure report generation
+
+Project Configuration~
+
+Create an `environments.json` in your project root:
+>
+    {
+      "environments": {
+        "qa": ["auto", "use1"],
+        "fastly": ["auto"],
+        "prod": ["auto", "use1", "usw2", "euw1", "apse1"]
+      }
+    }
+<
+
+Define test markers in `pytest.ini`:
+>
+    [pytest]
+    markers =
+        bdd: BDD tests
+        unit: Unit tests
+        functional: Functional tests
+<
+
+==============================================================================
+5. CONFIGURATION                               *pytest-atlas-configuration*
+
+Setup Options~
+
+Default configuration:
+>
+    require("pytest-atlas").setup({
+      keymap = "<leader>tt",  -- Keymap for test picker
+      enable_keymap = true,   -- Enable default keymap
+    })
+<
+
+Custom keymap:
+>
+    require("pytest-atlas").setup({
+      keymap = "<leader>pt",
+    })
+<
+
+Disable default keymap and register your own:
+>
+    require("pytest-atlas").setup({
+      enable_keymap = false,
+    })
+    
+    vim.keymap.set("n", "<leader>test", require("pytest-atlas").run_tests)
+<
+
+==============================================================================
+6. COMMANDS                                         *pytest-atlas-commands*
+
+:PytestAtlasRun                                         *:PytestAtlasRun*
+    Open the test picker and run tests with selected configuration.
+
+:PytestAtlasStatus                                   *:PytestAtlasStatus*
+    Show the current test environment status (environment and region).
+
+==============================================================================
+7. FUNCTIONS                                       *pytest-atlas-functions*
+
+require("pytest-atlas").run_tests()                *pytest-atlas.run_tests*
+    Open the test picker and run tests with selected configuration.
+
+require("pytest-atlas").show_status()            *pytest-atlas.show_status*
+    Show the current test environment status.
+
+==============================================================================
+8. LICENSE                                           *pytest-atlas-license*
+
+MIT License
+
+Copyright (c) 2024 ocrosby
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
