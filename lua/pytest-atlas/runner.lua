@@ -126,19 +126,15 @@ function M.run(selection)
         .. "/bin/allure serve allure-results 2>/dev/null || allure serve allure-results)"
     end
 
-    local allure_check_and_serve = table.concat({
-      "echo ''",
-      "echo '🔍 Checking for Allure results...'",
-      "if [ -d 'allure-results' ] && [ \"$(ls -A allure-results 2>/dev/null)\" ]",
-      "then",
-      "  echo '✅ Allure results found! Serving report...'",
-      "  echo 'Press Ctrl+C to stop the Allure server'",
-      "  echo ''",
-      "  " .. allure_serve_cmd,
-      "else",
-      "  echo '❌ No Allure results found in allure-results/ directory'",
-      "fi",
-    }, "; ")
+    local allure_check_and_serve = "echo ''; echo '🔍 Checking for Allure results...'; " ..
+      "if [ -d 'allure-results' ] && [ \"$(ls -A allure-results 2>/dev/null)\" ]; then " ..
+      "echo '✅ Allure results found! Serving report...'; " ..
+      "echo 'Press Ctrl+C to stop the Allure server'; " ..
+      "echo ''; " ..
+      allure_serve_cmd .. "; " ..
+      "else " ..
+      "echo '❌ No Allure results found in allure-results/ directory'; " ..
+      "fi"
 
     enhanced_command = table.concat({
       "echo '" .. table.concat(config_display, "\\n") .. "'",
