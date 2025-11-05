@@ -119,10 +119,21 @@ function M.show(callback)
   end
   
   logger.debug("Showing environment picker with items: " .. vim.inspect(reordered_items))
+  logger.debug("vim.ui.select function: " .. tostring(vim.ui.select))
+  
+  -- Add safety wrapper to ensure callback is always called
+  local picker_shown = false
+  vim.schedule(function()
+    if not picker_shown then
+      logger.error("Picker was never shown - vim.ui.select may have failed silently")
+    end
+  end)
 
   vim.ui.select(reordered_items, {
     prompt = "Select Environment",
   }, function(selected_env)
+    picker_shown = true
+    logger.debug("Environment picker callback invoked")
     logger.debug("Environment selected: " .. tostring(selected_env))
     
     if not selected_env then
