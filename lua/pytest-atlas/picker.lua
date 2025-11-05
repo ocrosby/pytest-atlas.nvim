@@ -64,7 +64,7 @@ end
 --- @param callback function Callback function receiving selection or nil
 function M.show(callback)
   logger.enter("picker.show")
-  
+
   -- Ensure snacks picker is set up
   logger.debug("Checking snacks availability")
   local ok, snacks = pcall(require, "snacks")
@@ -85,11 +85,11 @@ function M.show(callback)
   logger.debug("Loading environment configuration")
   local env_region = config_utils.load_env_region_config()
   logger.debug("Environment config: " .. vim.inspect(env_region))
-  
+
   logger.debug("Loading cached marker configuration")
   local cached = config_utils.load_cached_marker()
   logger.debug("Cached config: " .. vim.inspect(cached))
-  
+
   local items, lookup = generate_picker_items(env_region, cached)
   logger.debug("Generated picker items: " .. vim.inspect(items))
 
@@ -117,25 +117,36 @@ function M.show(callback)
   else
     reordered_items = items
   end
-  
+
   logger.debug("Showing environment picker with items: " .. vim.inspect(reordered_items))
   logger.debug("vim.ui.select function: " .. tostring(vim.ui.select))
-  
+  logger.debug("About to call vim.ui.select...")
+
   -- Add safety wrapper to ensure callback is always called
   local picker_shown = false
+  local callback_invoked = false
   vim.schedule(function()
-    if not picker_shown then
-      logger.error("Picker was never shown - vim.ui.select may have failed silently")
-    end
+    vim.defer_fn(function()
+      if not picker_shown then
+        logger.error("Picker was never shown - vim.ui.select may have failed silently")
+      end
+      if not callback_invoked then
+        logger.warn("Picker callback was never invoked after 5 seconds")
+      end
+    end, 5000)
   end)
 
+  logger.debug("Calling vim.ui.select now...")
   vim.ui.select(reordered_items, {
     prompt = "Select Environment",
   }, function(selected_env)
+    callback_invoked = true
     picker_shown = true
-    logger.debug("Environment picker callback invoked")
+    logger.debug("=== ENVIRONMENT PICKER CALLBACK INVOKED ===")
     logger.debug("Environment selected: " .. tostring(selected_env))
-    
+    logger.debug("Callback function type: " .. type(callback))
+    logger.debug("Selection type: " .. type(selected_env))
+
     if not selected_env then
       logger.info("Environment selection cancelled")
       callback(nil)
@@ -164,14 +175,14 @@ function M.show(callback)
     else
       reordered_regions = env_data.regions
     end
-    
+
     logger.debug("Showing region picker with items: " .. vim.inspect(reordered_regions))
 
     vim.ui.select(reordered_regions, {
       prompt = "Select Region for " .. selected_env,
     }, function(selected_region)
       logger.debug("Region selected: " .. tostring(selected_region))
-      
+
       if not selected_region then
         logger.info("Region selection cancelled")
         callback(nil)
@@ -182,7 +193,7 @@ function M.show(callback)
       logger.debug("Step 3: Marker selection")
       local markers = load_markers()
       logger.debug("Available markers: " .. vim.inspect(markers))
-      
+
       local default_marker = cached.markers
       local marker_exists = false
       for _, marker in ipairs(markers) do
@@ -207,14 +218,14 @@ function M.show(callback)
       else
         reordered_markers = markers
       end
-      
+
       logger.debug("Showing marker picker with items: " .. vim.inspect(reordered_markers))
 
       vim.ui.select(reordered_markers, {
         prompt = "Select Test Markers",
       }, function(selected_markers)
         logger.debug("Markers selected: " .. tostring(selected_markers))
-        
+
         if not selected_markers then
           logger.info("Marker selection cancelled")
           callback(nil)
@@ -239,14 +250,14 @@ function M.show(callback)
         else
           reordered_allure = allure_options
         end
-        
+
         logger.debug("Showing allure picker with default: " .. default_allure)
 
         vim.ui.select(reordered_allure, {
           prompt = "Generate Allure Report?",
         }, function(allure_choice)
           logger.debug("Allure choice: " .. tostring(allure_choice))
-          
+
           if allure_choice == nil then
             logger.info("Allure selection cancelled")
             callback(nil)
@@ -265,10 +276,10 @@ function M.show(callback)
             markers = selected_markers,
             open_allure = open_allure,
           }
-          
+
           logger.info("Picker complete, calling callback with: " .. vim.inspect(final_selection))
           logger.exit("picker.show", final_selection)
-          
+
           callback(final_selection)
         end)
       end)
