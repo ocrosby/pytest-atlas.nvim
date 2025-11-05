@@ -8,7 +8,6 @@ local M = {}
 --- @return table Window configuration
 function M.make_win_opts(title)
   return {
-    relative = "editor",
     position = "float",
     width = 0.9,
     height = 0.85,

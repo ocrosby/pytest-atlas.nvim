@@ -62,26 +62,18 @@ end
 --- Test picker for environment, region, markers, and Allure selection
 --- @param callback function Callback function receiving selection or nil
 function M.show(callback)
-  -- Check if snacks.picker is available
+  -- Ensure snacks picker is set up
   local ok, snacks = pcall(require, "snacks")
-  if not ok or not snacks.picker then
-    vim.notify("snacks.picker is required for pytest-atlas.nvim", vim.log.levels.ERROR)
-    vim.schedule(function()
-      callback(nil)
-    end)
-    return
-  end
-  local picker = snacks.picker
-
-  -- Validate picker.select function exists
-  if type(picker.select) ~= "function" then
-    vim.notify("snacks.picker.select is not available", vim.log.levels.ERROR)
-    vim.schedule(function()
-      callback(nil)
-    end)
-    return
+  if ok and snacks.picker and snacks.picker.setup then
+    -- Check if vim.ui.select has been replaced with snacks picker
+    if vim.ui.select ~= snacks.picker.select then
+      -- Picker not initialized yet, force setup
+      pcall(snacks.picker.setup)
+    end
   end
 
+  -- Use vim.ui.select which snacks overrides
+  -- This is more stable than calling snacks.picker.select directly
   local env_region = config_utils.load_env_region_config()
   local cached = config_utils.load_cached_marker()
   local items, lookup = generate_picker_items(env_region, cached)
@@ -109,21 +101,20 @@ function M.show(callback)
     reordered_items = items
   end
 
-  local select_ok, select_err = pcall(function()
-    picker.select(reordered_items, {
-      prompt = "Select Environment",
-    }, function(selected_env)
-      if not selected_env then
-        callback(nil)
-        return
-      end
+  vim.ui.select(reordered_items, {
+    prompt = "Select Environment",
+  }, function(selected_env)
+    if not selected_env then
+      callback(nil)
+      return
+    end
 
-      local env_data = lookup[selected_env]
-      if not env_data or not env_data.regions then
-        vim.notify("Invalid environment selection: " .. tostring(selected_env), vim.log.levels.ERROR)
-        callback(nil)
-        return
-      end
+    local env_data = lookup[selected_env]
+    if not env_data or not env_data.regions then
+      vim.notify("Invalid environment selection: " .. tostring(selected_env), vim.log.levels.ERROR)
+      callback(nil)
+      return
+    end
 
     -- Step 2: Select region
     local default_region = (selected_env == cached.environment) and cached.region or nil
@@ -139,7 +130,7 @@ function M.show(callback)
       reordered_regions = env_data.regions
     end
 
-    picker.select(reordered_regions, {
+    vim.ui.select(reordered_regions, {
       prompt = "Select Region for " .. selected_env,
     }, function(selected_region)
       if not selected_region then
@@ -174,7 +165,7 @@ function M.show(callback)
         reordered_markers = markers
       end
 
-      picker.select(reordered_markers, {
+      vim.ui.select(reordered_markers, {
         prompt = "Select Test Markers",
       }, function(selected_markers)
         if not selected_markers then
@@ -200,7 +191,7 @@ function M.show(callback)
           reordered_allure = allure_options
         end
 
-        picker.select(reordered_allure, {
+        vim.ui.select(reordered_allure, {
           prompt = "Generate Allure Report?",
         }, function(allure_choice)
           if allure_choice == nil then
@@ -223,14 +214,6 @@ function M.show(callback)
       end)
     end)
   end)
-  end)
-
-  if not select_ok then
-    vim.notify("Error opening picker: " .. tostring(select_err), vim.log.levels.ERROR)
-    vim.schedule(function()
-      callback(nil)
-    end)
-  end
 end
 
 return M

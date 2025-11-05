@@ -153,15 +153,23 @@ function M.run(selection)
   end
 
   -- Execute enhanced command in a terminal with environment variables
+  local win_opts = terminal_utils.make_win_opts(open_allure and "Pytest + Allure Server" or "Pytest Test Runner")
+  
+  -- Use on_buf callback (supported by snacks) instead of on_open (not supported)
+  win_opts.on_buf = function(self)
+    vim.schedule(function()
+      if vim.api.nvim_buf_is_valid(self.buf) then
+        vim.bo[self.buf].modifiable = true
+        vim.bo[self.buf].readonly = false
+      end
+    end)
+  end
+  
   snacks.terminal.open({ "sh", "-c", enhanced_command }, {
     env = terminal_env,
-    win = terminal_utils.make_win_opts(open_allure and "Pytest + Allure Server" or "Pytest Test Runner"),
+    win = win_opts,
     start_insert = false,
     auto_insert = false,
-    on_open = function(term)
-      vim.opt_local.modifiable = true
-      vim.opt_local.readonly = false
-    end,
   })
 end
 
