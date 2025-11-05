@@ -25,7 +25,7 @@ M.config = config
 ---@param args Config? User configuration
 M.setup = function(args)
   logger.enter("pytest-atlas.setup", args)
-  
+
   M.config = vim.tbl_deep_extend("force", M.config, args or {})
 
   -- Set log level based on debug flag
@@ -41,26 +41,26 @@ M.setup = function(args)
     logger.debug("Registering keymap: " .. M.config.keymap)
     vim.keymap.set("n", M.config.keymap, M.run_tests, { desc = "Pytest: Run with test picker" })
   end
-  
+
   logger.exit("pytest-atlas.setup")
 end
 
 --- Run test picker and execute pytest with selected configuration
 M.run_tests = function()
   logger.enter("pytest-atlas.run_tests")
-  
+
   local ok, err = pcall(function()
     picker.show(function(selection)
       logger.debug("Picker callback invoked with selection: " .. vim.inspect(selection))
       runner.run(selection)
+      logger.exit("pytest-atlas.run_tests")
     end)
   end)
-  
+
   if not ok then
     logger.exception("pytest-atlas.run_tests", err)
-  else
-    logger.exit("pytest-atlas.run_tests")
   end
+  -- Note: logger.exit() is called in the picker callback above
 end
 
 --- Show current test environment status
