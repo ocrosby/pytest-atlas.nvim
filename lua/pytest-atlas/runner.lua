@@ -3,13 +3,17 @@
 
 local M = {}
 
+local logger = require("pytest-atlas.logger")
 local venv_utils = require("pytest-atlas.utils.venv")
 local terminal_utils = require("pytest-atlas.utils.terminal")
 
 --- Run pytest with selected configuration
 --- @param selection table Test configuration selection
 function M.run(selection)
+  logger.enter("runner.run", selection)
+  
   if not selection then
+    logger.warn("Test picker cancelled - no selection provided")
     vim.notify("Test picker cancelled", vim.log.levels.INFO)
     return
   end
@@ -18,8 +22,11 @@ function M.run(selection)
   local region = selection.region
   local markers = selection.markers
   local open_allure = selection.open_allure
+  
+  logger.debug("Parsed selection - env: " .. env .. ", region: " .. region .. ", markers: " .. markers)
 
   -- Set environment variables for the session
+  logger.debug("Setting environment variables")
   vim.env.TEST_ENVIRONMENT = env
   vim.env.TEST_REGION = region
   vim.env.TEST_MARKERS = markers
@@ -29,7 +36,10 @@ function M.run(selection)
   vim.notify(string.format("Running tests in %s (%s) with markers: %s", env, region, markers), vim.log.levels.INFO)
 
   -- Check for virtual environment and build pytest command
+  logger.debug("Searching for virtual environments")
   local venvs = venv_utils.find_virtual_envs()
+  logger.debug("Found " .. #venvs .. " virtual environments: " .. vim.inspect(venvs))
+  
   local python_cmd = "python"
   local pytest_cmd = "pytest"
 
@@ -37,8 +47,10 @@ function M.run(selection)
     local venv = venvs[1]
     python_cmd = venv .. "/bin/python"
     pytest_cmd = venv .. "/bin/pytest"
+    logger.info("Using virtual environment: " .. venv, true)
     vim.notify(string.format("Using virtual environment: %s", venv), vim.log.levels.INFO)
   else
+    logger.warn("No virtual environment found, using system Python", true)
     vim.notify("No virtual environment found, using system Python", vim.log.levels.WARN)
   end
 
@@ -146,31 +158,50 @@ function M.run(selection)
   end
 
   -- Check if snacks.terminal is available
+  logger.debug("Checking snacks.terminal availability")
   local ok, snacks = pcall(require, "snacks")
   if not ok or not snacks.terminal then
+    logger.error("snacks.terminal is not available: " .. tostring(snacks))
     vim.notify("snacks.terminal is required for pytest-atlas.nvim", vim.log.levels.ERROR)
     return
   end
+  logger.debug("snacks.terminal is available")
 
   -- Execute enhanced command in a terminal with environment variables
+  logger.debug("Creating terminal window configuration")
   local win_opts = terminal_utils.make_win_opts(open_allure and "Pytest + Allure Server" or "Pytest Test Runner")
+  logger.debug("Window options: " .. vim.inspect(win_opts))
   
   -- Use on_buf callback (supported by snacks) instead of on_open (not supported)
   win_opts.on_buf = function(self)
+    logger.debug("Terminal buffer created: " .. self.buf)
     vim.schedule(function()
       if vim.api.nvim_buf_is_valid(self.buf) then
         vim.bo[self.buf].modifiable = true
         vim.bo[self.buf].readonly = false
+        logger.debug("Buffer options set for buf " .. self.buf)
+      else
+        logger.warn("Terminal buffer " .. self.buf .. " is not valid")
       end
     end)
   end
   
-  snacks.terminal.open({ "sh", "-c", enhanced_command }, {
-    env = terminal_env,
-    win = win_opts,
-    start_insert = false,
-    auto_insert = false,
-  })
+  logger.info("Opening terminal with command: " .. enhanced_command)
+  local term_ok, term_result = pcall(function()
+    return snacks.terminal.open({ "sh", "-c", enhanced_command }, {
+      env = terminal_env,
+      win = win_opts,
+      start_insert = false,
+      auto_insert = false,
+    })
+  end)
+  
+  if not term_ok then
+    logger.exception("runner.run - terminal.open failed", term_result)
+  else
+    logger.info("Terminal opened successfully")
+    logger.exit("runner.run")
+  end
 end
 
 return M
