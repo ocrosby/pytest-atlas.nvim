@@ -15,6 +15,7 @@ A Neovim plugin that maps your pytest-bdd universe. Seamlessly select environmen
 
 - Neovim >= 0.9.0
 - [snacks.nvim](https://github.com/folke/snacks.nvim) - For picker UI and terminal
+- [yaml.nvim](https://github.com/jedi-knights/yaml.nvim) - For YAML parsing
 - Python virtual environment (optional but recommended)
 - pytest (for running tests)
 - allure-commandline (optional, for Allure reports)
@@ -28,6 +29,7 @@ A Neovim plugin that maps your pytest-bdd universe. Seamlessly select environmen
   "ocrosby/pytest-atlas.nvim",
   dependencies = {
     "folke/snacks.nvim",
+    "jedi-knights/yaml.nvim",
   },
   config = function()
     require("pytest-atlas").setup({
@@ -45,6 +47,7 @@ use {
   "ocrosby/pytest-atlas.nvim",
   requires = {
     "folke/snacks.nvim",
+    "jedi-knights/yaml.nvim",
   },
   config = function()
     require("pytest-atlas").setup()

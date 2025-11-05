@@ -63,12 +63,13 @@ end
 --- @param callback function Callback function receiving selection or nil
 function M.show(callback)
   -- Check if snacks.picker is available
-  local ok, picker = pcall(require, "snacks.picker")
-  if not ok then
+  local ok, snacks = pcall(require, "snacks")
+  if not ok or not snacks.picker then
     vim.notify("snacks.picker is required for pytest-atlas.nvim", vim.log.levels.ERROR)
     callback(nil)
     return
   end
+  local picker = snacks.picker
 
   local env_region = config_utils.load_env_region_config()
   local cached = config_utils.load_cached_marker()

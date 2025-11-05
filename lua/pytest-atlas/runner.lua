@@ -146,14 +146,14 @@ function M.run(selection)
   end
 
   -- Check if snacks.terminal is available
-  local ok, snacks_terminal = pcall(require, "snacks.terminal")
-  if not ok then
+  local ok, snacks = pcall(require, "snacks")
+  if not ok or not snacks.terminal then
     vim.notify("snacks.terminal is required for pytest-atlas.nvim", vim.log.levels.ERROR)
     return
   end
 
   -- Execute enhanced command in a terminal with environment variables
-  snacks_terminal.open({ "sh", "-c", enhanced_command }, {
+  snacks.terminal.open({ "sh", "-c", enhanced_command }, {
     env = terminal_env,
     win = terminal_utils.make_win_opts(open_allure and "Pytest + Allure Server" or "Pytest Test Runner"),
     start_insert = false,
