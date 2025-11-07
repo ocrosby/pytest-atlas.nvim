@@ -66,7 +66,6 @@ function M.run(selection)
     table.insert(pytest_args, markers)
   end
 
-  -- Add allure report if requested
   if open_allure then
     table.insert(pytest_args, "--alluredir=allure-results")
   end
@@ -128,9 +127,9 @@ function M.run(selection)
     "",
   }
 
-  -- Create enhanced shell command that conditionally handles allure serving
   local enhanced_command
   if open_allure then
+    local clean_allure = "rm -rf allure-results"
     local allure_serve_cmd = "allure serve allure-results"
     if #venvs > 0 then
       allure_serve_cmd = "("
@@ -149,6 +148,7 @@ function M.run(selection)
       "fi"
 
     enhanced_command = table.concat({
+      clean_allure,
       "echo '" .. table.concat(config_display, "\\n") .. "'",
       actual_command,
       allure_check_and_serve,
