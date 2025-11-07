@@ -23,17 +23,17 @@ function M.run(selection)
   local markers = selection.markers
   local open_allure = selection.open_allure
   
-  logger.debug("Parsed selection - env: " .. env .. ", region: " .. region .. ", markers: " .. markers)
+  logger.debug("Parsed selection - env: " .. env .. ", region: " .. region .. ", markers: " .. tostring(markers))
 
   -- Set environment variables for the session
   logger.debug("Setting environment variables")
   vim.env.TEST_ENVIRONMENT = env
   vim.env.TEST_REGION = region
-  vim.env.TEST_MARKERS = markers
+  vim.env.TEST_MARKERS = markers or ""
   vim.env.TEST_OPEN_ALLURE = open_allure and "true" or "false"
 
   -- Notify user about the selection
-  vim.notify(string.format("Running tests in %s (%s) with markers: %s", env, region, markers), vim.log.levels.INFO)
+  vim.notify(string.format("Running tests in %s (%s) with markers: %s", env, region, markers or "None"), vim.log.levels.INFO)
 
   -- Check for virtual environment and build pytest command
   logger.debug("Searching for virtual environments")
@@ -81,7 +81,7 @@ function M.run(selection)
   local terminal_env = {
     TEST_ENVIRONMENT = env,
     TEST_REGION = region,
-    TEST_MARKERS = markers,
+    TEST_MARKERS = markers or "",
     TEST_OPEN_ALLURE = open_allure and "true" or "false",
   }
 
@@ -119,7 +119,7 @@ function M.run(selection)
     "=" .. string.rep("=", 60),
     "Environment: " .. env,
     "Region: " .. region,
-    "Markers: " .. (markers ~= "" and markers or "None"),
+    "Markers: " .. (markers and markers ~= "" and markers or "None"),
     "Allure Report: " .. (open_allure and "Yes" or "No"),
     "Python Env: " .. (#venvs > 0 and venvs[1] or "System Python"),
     "Execution Mode: " .. (has_preprocessor and "Preprocessor Script" or "Direct Pytest"),

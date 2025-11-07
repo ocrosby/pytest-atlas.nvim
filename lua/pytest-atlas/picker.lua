@@ -194,6 +194,8 @@ function M.show(callback)
       local markers = load_markers()
       logger.debug("Available markers: " .. vim.inspect(markers))
 
+      table.insert(markers, 1, "None")
+
       local default_marker = cached.markers
       local marker_exists = false
       for _, marker in ipairs(markers) do
@@ -230,6 +232,10 @@ function M.show(callback)
           logger.info("Marker selection cancelled")
           callback(nil)
           return
+        end
+
+        if selected_markers == "None" then
+          selected_markers = nil
         end
 
         -- Step 4: Select Allure preference
