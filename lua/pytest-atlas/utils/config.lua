@@ -114,7 +114,6 @@ function M.load_pytest_markers(pytest_ini_path)
   for _, line in ipairs(lines) do
     local trimmed = line:match("^%s*(.-)%s*$")
 
-    -- Check if we're entering the markers section
     if trimmed:match("^markers%s*=") then
       in_markers_section = true
       local markers_line = trimmed:match("^markers%s*=%s*(.+)")
@@ -125,32 +124,21 @@ function M.load_pytest_markers(pytest_ini_path)
           end
         end
       end
-      goto continue
-    end
-
-    -- If we're in markers section, continue parsing
-    if in_markers_section then
-      -- Stop if we hit a new section
+    elseif in_markers_section then
       if trimmed:match("^%[") then
         break
       end
 
-      -- Skip empty lines and comments
-      if trimmed == "" or trimmed:match("^#") then
-        goto continue
-      end
-
-      -- Extract marker name
-      local marker = trimmed:match("^([^:]+)")
-      if marker then
-        marker = marker:match("^%s*(.-)%s*$")
-        if marker ~= "" then
-          table.insert(markers, marker)
+      if trimmed ~= "" and not trimmed:match("^#") then
+        local marker = trimmed:match("^([^:]+)")
+        if marker then
+          marker = marker:match("^%s*(.-)%s*$")
+          if marker ~= "" then
+            table.insert(markers, marker)
+          end
         end
       end
     end
-
-    ::continue::
   end
 
   return #markers > 0 and markers or nil

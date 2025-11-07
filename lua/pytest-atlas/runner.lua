@@ -11,7 +11,7 @@ local terminal_utils = require("pytest-atlas.utils.terminal")
 --- @param selection table Test configuration selection
 function M.run(selection)
   logger.enter("runner.run", selection)
-  
+
   if not selection then
     logger.warn("Test picker cancelled - no selection provided")
     vim.notify("Test picker cancelled", vim.log.levels.INFO)
@@ -22,7 +22,7 @@ function M.run(selection)
   local region = selection.region
   local markers = selection.markers
   local open_allure = selection.open_allure
-  
+
   logger.debug("Parsed selection - env: " .. env .. ", region: " .. region .. ", markers: " .. tostring(markers))
 
   -- Set environment variables for the session
@@ -33,13 +33,16 @@ function M.run(selection)
   vim.env.TEST_OPEN_ALLURE = open_allure and "true" or "false"
 
   -- Notify user about the selection
-  vim.notify(string.format("Running tests in %s (%s) with markers: %s", env, region, markers or "None"), vim.log.levels.INFO)
+  vim.notify(
+    string.format("Running tests in %s (%s) with markers: %s", env, region, markers or "None"),
+    vim.log.levels.INFO
+  )
 
   -- Check for virtual environment and build pytest command
   logger.debug("Searching for virtual environments")
   local venvs = venv_utils.find_virtual_envs()
   logger.debug("Found " .. #venvs .. " virtual environments: " .. vim.inspect(venvs))
-  
+
   local python_cmd = "python"
   local pytest_cmd = "pytest"
 
@@ -137,15 +140,16 @@ function M.run(selection)
         .. "/bin/allure serve allure-results 2>/dev/null || allure serve allure-results)"
     end
 
-    local allure_check_and_serve = "echo ''; echo '🔍 Checking for Allure results...'; " ..
-      "if [ -d 'allure-results' ] && [ \"$(ls -A allure-results 2>/dev/null)\" ]; then " ..
-      "echo '✅ Allure results found! Serving report...'; " ..
-      "echo 'Press Ctrl+C to stop the Allure server'; " ..
-      "echo ''; " ..
-      allure_serve_cmd .. "; " ..
-      "else " ..
-      "echo '❌ No Allure results found in allure-results/ directory'; " ..
-      "fi"
+    local allure_check_and_serve = "echo ''; echo '🔍 Checking for Allure results...'; "
+      .. "if [ -d 'allure-results' ] && [ \"$(ls -A allure-results 2>/dev/null)\" ]; then "
+      .. "echo '✅ Allure results found! Serving report...'; "
+      .. "echo 'Press Ctrl+C to stop the Allure server'; "
+      .. "echo ''; "
+      .. allure_serve_cmd
+      .. "; "
+      .. "else "
+      .. "echo '❌ No Allure results found in allure-results/ directory'; "
+      .. "fi"
 
     enhanced_command = table.concat({
       clean_allure,
@@ -171,7 +175,7 @@ function M.run(selection)
   logger.debug("Creating terminal window configuration")
   local win_opts = terminal_utils.make_win_opts(open_allure and "Pytest + Allure Server" or "Pytest Test Runner")
   logger.debug("Window options: " .. vim.inspect(win_opts))
-  
+
   -- Use on_buf callback (supported by snacks) instead of on_open (not supported)
   win_opts.on_buf = function(self)
     logger.debug("Terminal buffer created: " .. self.buf)
@@ -185,7 +189,7 @@ function M.run(selection)
       end
     end)
   end
-  
+
   logger.info("Opening terminal with command: " .. enhanced_command)
   local term_ok, term_result = pcall(function()
     return snacks.terminal.open({ "sh", "-c", enhanced_command }, {
@@ -195,7 +199,7 @@ function M.run(selection)
       auto_insert = false,
     })
   end)
-  
+
   if not term_ok then
     logger.exception("runner.run - terminal.open failed", term_result)
   else
