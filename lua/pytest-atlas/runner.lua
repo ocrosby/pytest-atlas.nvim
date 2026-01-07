@@ -158,33 +158,20 @@ function M.run(selection)
       .. "printf '%s\\n' '❌ No Allure results found in allure-results/ directory'; "
       .. "fi"
     
-    local cleanup_script = [[ALLURE_PIDS=""
-cleanup() {
-  printf '\n%s\n' '🧹 Cleaning up Allure server processes...'
-  
-  if [ -n "$ALLURE_PIDS" ]; then
-    printf '%s\n' "Killing tracked PIDs: $ALLURE_PIDS"
-    echo "$ALLURE_PIDS" | xargs -r kill -9 2>/dev/null
-  fi
-  
-  jobs -p | xargs -r kill -9 2>/dev/null
-  pkill -P $$ -f "allure.*serve" 2>/dev/null
-  pkill -P $$ -f "java.*jetty" 2>/dev/null
-  
-  sleep 0.5
-  
-  REMAINING=$(pgrep -f "allure.*serve|java.*jetty" 2>/dev/null)
-  if [ -n "$REMAINING" ]; then
-    printf '%s\n' "Force killing remaining processes: $REMAINING"
-    echo "$REMAINING" | xargs -r kill -9 2>/dev/null
-  fi
-  
-  printf '%s\n' '✅ Cleanup complete'
-}
-trap cleanup EXIT INT TERM
-]]
+    local cleanup_func = "cleanup() { printf '\\n%s\\n' '🧹 Cleaning up Allure server processes...'; "
+      .. "jobs -p | xargs -r kill -9 2>/dev/null; "
+      .. "pkill -P $$ -f 'allure.*serve' 2>/dev/null; "
+      .. "pkill -P $$ -f 'java.*jetty' 2>/dev/null; "
+      .. "sleep 0.5; "
+      .. "REMAINING=$(pgrep -f 'allure.*serve|java.*jetty' 2>/dev/null); "
+      .. "if [ -n \"$REMAINING\" ]; then "
+      .. "printf '%s\\n' \"Force killing remaining processes: $REMAINING\"; "
+      .. "echo \"$REMAINING\" | xargs -r kill -9 2>/dev/null; "
+      .. "fi; "
+      .. "printf '%s\\n' '✅ Cleanup complete'; }; "
+      .. "trap cleanup EXIT INT TERM"
     
-    enhanced_command = cleanup_script
+    enhanced_command = cleanup_func
       .. " && rm -rf allure-results"
       .. " && "
       .. config_echo
