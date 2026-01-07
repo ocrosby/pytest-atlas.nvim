@@ -187,15 +187,30 @@ capture_allure_pids() {
       .. "echo '❌ No Allure results found in allure-results/ directory'; "
       .. "fi"
 
+    local config_echo = "printf '%s\\n' "
+      .. table.concat(
+        vim.tbl_map(function(line)
+          return "'" .. line:gsub("'", "'\\''") .. "'"
+        end, config_display),
+        " "
+      )
+    
     enhanced_command = table.concat({
       cleanup_script,
       clean_allure,
-      "echo '" .. table.concat(config_display, "\\n") .. "'",
+      config_echo,
       actual_command,
       allure_check_and_serve,
     }, " && ")
   else
-    enhanced_command = "echo '" .. table.concat(config_display, "\\n") .. "' && " .. actual_command
+    local config_echo = "printf '%s\\n' "
+      .. table.concat(
+        vim.tbl_map(function(line)
+          return "'" .. line:gsub("'", "'\\''") .. "'"
+        end, config_display),
+        " "
+      )
+    enhanced_command = config_echo .. " && " .. actual_command
   end
 
   -- Check if snacks.terminal is available
