@@ -158,8 +158,7 @@ function M.run(selection)
       .. "printf '%s\\n' '❌ No Allure results found in allure-results/ directory'; "
       .. "fi"
     
-    local cleanup_script = [[
-ALLURE_PIDS=""
+    local cleanup_script = [[ALLURE_PIDS=""
 cleanup() {
   printf '\n%s\n' '🧹 Cleaning up Allure server processes...'
   
@@ -186,7 +185,7 @@ trap cleanup EXIT INT TERM
 ]]
     
     enhanced_command = cleanup_script
-      .. "; rm -rf allure-results"
+      .. " && rm -rf allure-results"
       .. " && "
       .. config_echo
       .. " && "
