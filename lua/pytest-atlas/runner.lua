@@ -38,6 +38,10 @@ function M.run(selection)
     vim.log.levels.INFO
   )
 
+  -- Check for uv first
+  local has_uv = vim.fn.executable("uv") == 1
+  local use_uv = has_uv
+  
   -- Check for virtual environment and build pytest command
   logger.debug("Searching for virtual environments")
   local venvs = venv_utils.find_virtual_envs()
@@ -45,8 +49,15 @@ function M.run(selection)
 
   local python_cmd = "python"
   local pytest_cmd = "pytest"
+  local python_prefix = ""
 
-  if #venvs > 0 then
+  if use_uv then
+    python_prefix = "uv run "
+    python_cmd = "uv run python"
+    pytest_cmd = "uv run pytest"
+    logger.info("Using uv for package management", true)
+    vim.notify("Using uv for package management", vim.log.levels.INFO)
+  elseif #venvs > 0 then
     local venv = venvs[1]
     python_cmd = venv .. "/bin/python"
     pytest_cmd = venv .. "/bin/pytest"
@@ -87,8 +98,8 @@ function M.run(selection)
     TEST_OPEN_ALLURE = open_allure and "true" or "false",
   }
 
-  -- Add virtual environment variables if using venv
-  if #venvs > 0 then
+  -- Add virtual environment variables if using venv (not needed for uv)
+  if not use_uv and #venvs > 0 then
     local venv = venvs[1]
     terminal_env.VIRTUAL_ENV = venv
     terminal_env.PATH = venv .. "/bin:" .. (os.getenv("PATH") or "")
@@ -101,7 +112,7 @@ function M.run(selection)
   local actual_command
   if has_preprocessor then
     -- Use preprocessor.py process command
-    local python_exe = (#venvs > 0 and venvs[1] .. "/bin/python" or "python")
+    local python_exe = python_cmd
     local preprocessor_args = { "process", "-e", env, "-r", region }
 
     if markers and markers ~= "" then
@@ -123,7 +134,7 @@ function M.run(selection)
     "Region: " .. region,
     "Markers: " .. (markers and markers ~= "" and markers or "None"),
     "Allure Report: " .. (open_allure and "Yes" or "No"),
-    "Python Env: " .. (#venvs > 0 and venvs[1] or "System Python"),
+    "Python Env: " .. (use_uv and "uv" or (#venvs > 0 and venvs[1] or "System Python")),
     "Execution Mode: " .. (has_preprocessor and "Preprocessor Script" or "Direct Pytest"),
     "Command: " .. actual_command,
     "=" .. string.rep("=", 60),
@@ -134,7 +145,9 @@ function M.run(selection)
   if open_allure then
     local clean_allure = "rm -rf allure-results"
     local allure_serve_cmd = "allure serve allure-results"
-    if #venvs > 0 then
+    if use_uv then
+      allure_serve_cmd = "(uv run allure serve allure-results 2>/dev/null || allure serve allure-results)"
+    elseif #venvs > 0 then
       allure_serve_cmd = "("
         .. venvs[1]
         .. "/bin/allure serve allure-results 2>/dev/null || allure serve allure-results)"
