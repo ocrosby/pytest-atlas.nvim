@@ -140,14 +140,31 @@ function M.run(selection)
         .. "/bin/allure serve allure-results 2>/dev/null || allure serve allure-results)"
     end
 
+    local config_echo = "printf '%s\\n' "
+      .. table.concat(
+        vim.tbl_map(function(line)
+          return "'" .. line:gsub("'", "'\\''") .. "'"
+        end, config_display),
+        " "
+      )
+    
+    local allure_check_and_serve = "printf '\\n' && printf '%s\\n' '🔍 Checking for Allure results...' && "
+      .. "if [ -d 'allure-results' ] && [ \"$(ls -A allure-results 2>/dev/null)\" ]; then "
+      .. "printf '%s\\n' '✅ Allure results found! Serving report...' "
+      .. "'Press Ctrl+C or close this terminal to stop the Allure server' '' && "
+      .. allure_serve_cmd
+      .. " & ALLURE_PID=$!; wait $ALLURE_PID; "
+      .. "else "
+      .. "printf '%s\\n' '❌ No Allure results found in allure-results/ directory'; "
+      .. "fi"
+    
     local cleanup_script = [[
 ALLURE_PIDS=""
 cleanup() {
-  echo ""
-  echo "🧹 Cleaning up Allure server processes..."
+  printf '\n%s\n' '🧹 Cleaning up Allure server processes...'
   
   if [ -n "$ALLURE_PIDS" ]; then
-    echo "Killing tracked PIDs: $ALLURE_PIDS"
+    printf '%s\n' "Killing tracked PIDs: $ALLURE_PIDS"
     echo "$ALLURE_PIDS" | xargs -r kill -9 2>/dev/null
   fi
   
@@ -159,49 +176,23 @@ cleanup() {
   
   REMAINING=$(pgrep -f "allure.*serve|java.*jetty" 2>/dev/null)
   if [ -n "$REMAINING" ]; then
-    echo "Force killing remaining processes: $REMAINING"
+    printf '%s\n' "Force killing remaining processes: $REMAINING"
     echo "$REMAINING" | xargs -r kill -9 2>/dev/null
   fi
   
-  echo "✅ Cleanup complete"
+  printf '%s\n' '✅ Cleanup complete'
 }
 trap cleanup EXIT INT TERM
-
-capture_allure_pids() {
-  sleep 2
-  ALLURE_PIDS=$(pgrep -f "allure.*serve|java.*jetty" 2>/dev/null | tr '\n' ' ')
-  if [ -n "$ALLURE_PIDS" ]; then
-    echo "📌 Tracking Allure PIDs: $ALLURE_PIDS"
-  fi
-}
 ]]
-
-    local allure_check_and_serve = "echo ''; echo '🔍 Checking for Allure results...'; "
-      .. "if [ -d 'allure-results' ] && [ \"$(ls -A allure-results 2>/dev/null)\" ]; then "
-      .. "echo '✅ Allure results found! Serving report...'; "
-      .. "echo 'Press Ctrl+C or close this terminal to stop the Allure server'; "
-      .. "echo ''; "
-      .. allure_serve_cmd
-      .. " & capture_allure_pids; wait; "
-      .. "else "
-      .. "echo '❌ No Allure results found in allure-results/ directory'; "
-      .. "fi"
-
-    local config_echo = "printf '%s\\n' "
-      .. table.concat(
-        vim.tbl_map(function(line)
-          return "'" .. line:gsub("'", "'\\''") .. "'"
-        end, config_display),
-        " "
-      )
     
-    enhanced_command = table.concat({
-      cleanup_script,
-      clean_allure,
-      config_echo,
-      actual_command,
-      allure_check_and_serve,
-    }, " && ")
+    enhanced_command = cleanup_script
+      .. "; rm -rf allure-results"
+      .. " && "
+      .. config_echo
+      .. " && "
+      .. actual_command
+      .. " && "
+      .. allure_check_and_serve
   else
     local config_echo = "printf '%s\\n' "
       .. table.concat(
